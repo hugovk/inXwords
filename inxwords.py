@@ -96,7 +96,6 @@ def ends_with_in_x_words(text):
     if not text:
         return 0
     found = REGEX.findall(text, re.IGNORECASE)
-    print(found)
     if found:
         found = found[0]
         try:
