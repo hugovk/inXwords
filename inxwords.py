@@ -28,8 +28,8 @@ from pprint import pprint
 try:
     # http://stackoverflow.com/a/2282656/724176
     from timeout import timeout, TimeoutError
-except AttributeError:
-    # Not on Windows
+except (AttributeError, ImportError) as e:
+    # Not on Windows or module not present
     timeout = None
     TimeoutError = None
 
