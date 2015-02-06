@@ -33,7 +33,7 @@ except AttributeError:
     timeout = None
     TimeoutError = None
 
-REGEX = re.compile("[Ii]n([0-9]+)[Ww]ords$")
+REGEX = re.compile("[Ii]n([0-9]+|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix)[Ww]ords$")
 
 # Dict of number of words in a sentence->all those sentences
 BIG_OLD_CACHE = {}
@@ -95,9 +95,21 @@ def ends_with_in_x_words(text):
     """
     if not text:
         return 0
-    found = REGEX.findall(text)
+    found = REGEX.findall(text, re.IGNORECASE)
+    print(found)
     if found:
-        return int(found[0])
+        found = found[0]
+        try:
+            return int(found)
+        except ValueError:
+            if found.lower() == "three":
+                return 3
+            elif found.lower() == "four":
+                return 4
+            elif found.lower() == "five":
+                return 5
+            elif found.lower() == "six":
+                return 6
     return 0
 
 
