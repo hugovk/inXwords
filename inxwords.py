@@ -13,7 +13,6 @@ except ImportError:
     # resource not on Windows
     pass
 
-
 import argparse
 import os
 import random
@@ -38,19 +37,10 @@ REGEX = re.compile("[Ii]n([0-9]+|[Tt]hree|[Ff]our|[Ff]ive|[Ss]ix)[Ww]ords$")
 # Dict of number of words in a sentence->all those sentences
 BIG_OLD_CACHE = {}
 
-HELSINKI_LAT = 60.170833
-HELSINKI_LONG = 24.9375
-
-# Limit to five locations to avoid rate limit:
-#  * "GET trends/place" rate limit is 15 calls/15 minutes.
-#  * We look for a new trend once every five minutes.
-#  * If no hits found, all WOE_IDS are checked.
 WOE_IDS = {
     "World":     1,
     "Australia": 23424748,
     "Canada":    23424775,
-    # "France": 23424819,
-    # "Sweden": 23424954,
     "UK":        23424975,
     "US":        23424977,
 }
@@ -59,8 +49,8 @@ TWITTER = None
 
 SEPERATORS = [" ", " ", " ", " ", "\n", "\n", "\n\n"]
 
-# Only get a trend every five minutes
-counter = 0
+# To avoid rate limits
+get_trends_place_timestamp = 0
 
 
 # cmd.exe cannot do Unicode so encode first
@@ -75,7 +65,6 @@ def load_yaml(filename):
     consumer_secret: TODO_ENTER_YOURS
     access_token: TODO_ENTER_YOURS
     access_token_secret: TODO_ENTER_YOURS
-    If it contains last_number or last_mention_id, don't change it
     """
     f = open(filename)
     data = yaml.safe_load(f)
@@ -86,6 +75,24 @@ def load_yaml(filename):
         sys.exit("Twitter credentials missing from YAML: " + filename)
 
     return data
+
+
+def get_twitter():
+    global TWITTER
+
+    if TWITTER is None:
+        data = load_yaml(args.yaml)
+
+        # Create and authorise an app with (read and) write access at:
+        # https://dev.twitter.com/apps/new
+        # Store credentials in YAML file
+        TWITTER = twitter.Twitter(auth=twitter.OAuth(
+            data['access_token'],
+            data['access_token_secret'],
+            data['consumer_key'],
+            data['consumer_secret']))
+
+    return TWITTER
 
 
 def ends_with_in_x_words(text):
@@ -113,28 +120,18 @@ def ends_with_in_x_words(text):
 
 
 def get_trending_topic_from_twitter():
-    global TWITTER, counter
+    global get_trends_place_timestamp
 
     # "This information is cached for 5 minutes. Requesting more frequently
     # than that will not return any more data, and will count against your
     # rate limit usage."
-    if counter <= 0 or ends_with_in_x_words(args.trend) == 0:
-        counter = 4
+    if time.time() - get_trends_place_timestamp > 300:
         print("Get fresh trend")
     else:
-        counter -= 1
         print("Use cached trend")
         return args.trend, ends_with_in_x_words(args.trend)
 
-    # Create and authorise an app with (read and) write access at:
-    # https://dev.twitter.com/apps/new
-    # Store credentials in YAML file
-    if TWITTER is None:
-        TWITTER = twitter.Twitter(auth=twitter.OAuth(
-            data['access_token'],
-            data['access_token_secret'],
-            data['consumer_key'],
-            data['consumer_secret']))
+    t = get_twitter()
 
     # Returns the locations that Twitter has trending topic information for.
     # world_locations = TWITTER.trends.available()
@@ -151,7 +148,8 @@ def get_trending_topic_from_twitter():
         print(woe_id)
 
         print("GET trends/place")
-        trends = TWITTER.trends.place(_id=woe_id[1])[0]
+        trends = t.trends.place(_id=woe_id[1])[0]
+        get_trends_place_timestamp = time.time()
 
         for trend in trends['trends']:
             print("-"*80)
@@ -190,15 +188,7 @@ def tweet_it(string, in_reply_to_status_id=None):
         print("ERROR: trying to tweet an empty tweet!")
         return
 
-    # Create and authorise an app with (read and) write access at:
-    # https://dev.twitter.com/apps/new
-    # Store credentials in YAML file
-    if TWITTER is None:
-        TWITTER = twitter.Twitter(auth=twitter.OAuth(
-            data['access_token'],
-            data['access_token_secret'],
-            data['consumer_key'],
-            data['consumer_secret']))
+    t = get_twitter()
 
     print_it("TWEETING THIS: " + string)
 
@@ -206,10 +196,8 @@ def tweet_it(string, in_reply_to_status_id=None):
         print("(Test mode, not actually tweeting)")
     else:
         print("POST statuses/update")
-        result = TWITTER.statuses.update(
+        result = t.statuses.update(
             status=string,
-            # lat=HELSINKI_LAT, long=HELSINKI_LONG,
-            display_coordinates=True,
             in_reply_to_status_id=in_reply_to_status_id)
         url = "http://twitter.com/" + \
             result['user']['screen_name'] + "/status/" + result['id_str']
@@ -277,7 +265,10 @@ if __name__ == "__main__":
         help="Default trend to use if none found")
     parser.add_argument(
         '-l', '--loop', action='store_true',
-        help="Run repeatedly with a minute delay")
+        help="Run repeatedly with a delay")
+    parser.add_argument(
+        '-d', '--delay', type=int, default=15, metavar='minutes',
+        help="Delay between loops")
     parser.add_argument(
         '-nw', '--no-web', action='store_true',
         help="Don't open a web browser to show the tweeted tweet")
@@ -286,25 +277,24 @@ if __name__ == "__main__":
         help="Test mode: go through the motions but don't update anything")
     args = parser.parse_args()
 
-    data = load_yaml(args.yaml)
-
     if args.loop:
         while(True):
             try:
                 inxwords()
-                print("Sleep for a minute")
-                time.sleep(60)
+                print("Sleep for " + str(args.delay) + " minutes")
+                time.sleep(args.delay*60)
             except TimeoutError as e:
                 print("*"*80)
                 print(e)
                 print("*"*80)
-                print("Sleep for 30 seconds")
-                time.sleep(30)
+                print("Sleep for " + str(args.delay*60-30) + " seconds")
+                time.sleep(args.delay*60-30)
             except twitter.api.TwitterHTTPError as e:
+                # Rate limit? Try again soon.
                 print("*"*80)
                 print(e)
                 print("*"*80)
-                print("Sleep for at least 60 seconds")
+                print("Sleep for just over a minute")
                 time.sleep(61)
     else:
         inxwords()
