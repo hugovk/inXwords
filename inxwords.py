@@ -139,7 +139,7 @@ def get_trending_topic_from_twitter():
     # print("*"*80)
 
     # Shuffle list of WOE_IDS, and go through each until a match is found
-    pprint(WOE_IDS)
+    # pprint(WOE_IDS)
     woe_ids = WOE_IDS.items()
     random.shuffle(woe_ids)
     pprint(woe_ids)
@@ -150,10 +150,10 @@ def get_trending_topic_from_twitter():
         print("GET trends/place")
         trends = t.trends.place(_id=woe_id[1])[0]
         get_trends_place_timestamp = time.time()
-
+        random.shuffle(trends['trends'])
         for trend in trends['trends']:
             print("-"*80)
-            pprint(trend)
+            # pprint(trend)
             print_it(trend['name'])
 
             how_many_words = ends_with_in_x_words(trend['name'])
@@ -165,8 +165,11 @@ def get_trending_topic_from_twitter():
                 args.trend = trend['name']
                 return trend['name'], how_many_words
 
-    print("No fresh trend found, use cached")
-    return args.trend, ends_with_in_x_words(args.trend)
+#     print("No fresh trend found, use cached")
+#     return args.trend, ends_with_in_x_words(args.trend)
+    print("No fresh trend found, reset cache and return nothing")
+    args.trend = None
+    return None, 0
 
 
 def get_random_sentence_from_pg(number_of_words):
@@ -252,8 +255,8 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '-y', '--yaml',
-        # default='/Users/hugo/Dropbox/bin/data/inxwords.yaml',
-        default='E:/Users/hugovk/Dropbox/bin/data/inxwords.yaml',
+        default='/Users/hugo/Dropbox/bin/data/inxwords.yaml',
+        # default='E:/Users/hugovk/Dropbox/bin/data/inxwords.yaml',
         help="YAML file location containing Twitter keys and secrets")
     parser.add_argument(
         '-s', '--sendir',
