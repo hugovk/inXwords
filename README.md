@@ -1,5 +1,8 @@
 # @inXwords
 
+[![Build Status](https://travis-ci.org/hugovk/inXwords.svg?branch=master)](https://travis-ci.org/hugovk/inXwords)
+[![Coverage Status](https://coveralls.io/repos/github/hugovk/inXwords/badge.svg?branch=master)](https://coveralls.io/github/hugovk/inXwords?branch=master)
+
 Find a trending topic along the lines of #YinXwords and tweet a random X-word sentence from Project Gutenberg.
 
 See it in action at **[![](https://abs.twimg.com/favicons/favicon.ico)@inXwords](https://twitter.com/inXwords)** and some of the best at [![](http://favstar.fm/favicon.ico)http://favstar.fm/users/inXwords](http://favstar.fm/users/inXwords).
