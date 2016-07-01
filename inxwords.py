@@ -260,8 +260,7 @@ if __name__ == "__main__":
         help="YAML file location containing Twitter keys and secrets")
     parser.add_argument(
         '-s', '--sendir',
-        # default='/Users/hugo/Dropbox/txt/gutenberg/',
-        default='E:/Users/hugovk/Dropbox/txt/gutenberg',
+        default='.',
         help="Directory of files containing sentences from Project Gutenberg")
     parser.add_argument(
         '-t', '--trend', default=None,
