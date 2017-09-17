@@ -134,7 +134,7 @@ def get_trending_topic_from_twitter():
     t = get_twitter()
 
     # Returns the locations that Twitter has trending topic information for.
-    # world_locations = TWITTER.trends.available()
+    # world_locations = t.trends.available()
     # pprint(world_locations)
     # print("*"*80)
 
@@ -185,8 +185,6 @@ def get_random_sentence_from_pg(number_of_words):
 
 
 def tweet_it(string, in_reply_to_status_id=None):
-    global TWITTER
-
     if len(string) <= 0:
         print("ERROR: trying to tweet an empty tweet!")
         return
