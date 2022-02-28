@@ -2,7 +2,7 @@ language: python
 
 python:
  - pypy
- - pypy3
+ - pypy-3.8
  - 2.7
  - 3.6
  - 3.5
